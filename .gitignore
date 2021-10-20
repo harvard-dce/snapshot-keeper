@@ -1,6 +1,6 @@
 *.js
 !jest.config.js
-!lib/function/index.js
+!lib/assets/snapshot-keeper/index.js
 *.d.ts
 node_modules
 

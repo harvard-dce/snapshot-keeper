@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
-import { DocdbDumperStack, DocdbDumperStackProps } from '../lib/docdb-dumper-stack';
+import { SnapshotKeeperStack, SnapshotKeeperStackProps } from '../lib/snapshot-keeper-stack';
 import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 
 
@@ -10,12 +10,12 @@ function bye(msg: string, exitCode: number): void {
   process.exit(exitCode);
 }
 
-const docdbDumperEnvironment = process.env.DOCDB_DUMPER_ENVIRONMENT || '';
-if (!docdbDumperEnvironment) bye('You must set DOCDB_DUMPER_ENVIRONMENT!', 1);
+const skEnv = process.env.SNAPSHOT_KEEPER_ENVIRONMENT || '';
+if (!skEnv) bye('You must set SNAPSHOT_KEEPER_ENVIRONMENT!', 1);
 
-async function getCdkConfig(): Promise<DocdbDumperStackProps | undefined> {
+async function getCdkConfig(): Promise<SnapshotKeeperStackProps | undefined> {
   const client = new SSMClient({});
-  const configParameterName = `/docdb-dumper/cdk-config/${docdbDumperEnvironment}`;
+  const configParameterName = `/snapshot-keeper/cdk-config/${skEnv}`;
   const getConfigCommand = new GetParameterCommand({
     Name: configParameterName,
     WithDecryption: true,
@@ -40,14 +40,26 @@ async function main(): Promise<void> {
   } else {
     console.log(config);
 
+    const {
+      DBClusterIdentifier,
+      vpcId,
+      intervals,
+      snsTopicArn,
+      env,
+    } = config;
+
     const app = new cdk.App();
-    new DocdbDumperStack(app, `DocdbDumperCdk-${docdbDumperEnvironment}`, {
-      ...config,
-      docdbDumperEnvironment,
+    new SnapshotKeeperStack(app, `SnapshotKeeperCdk-${skEnv}`, {
+      env,
+      DBClusterIdentifier,
+      vpcId,
+      intervals,
+      snsTopicArn,
       tags: {
-        project: 'Staff Stuff',
+        project: 'MH',
         department: 'DE',
-        environment: docdbDumperEnvironment,
+        product: 'snapshot-keeper',
+        deploy_environment: skEnv,
       }
     });
   }
